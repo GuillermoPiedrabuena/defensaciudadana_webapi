@@ -69,6 +69,7 @@ class Cases(db.Model):
 
     #se pone minuscula la tabla clients pues mira directamente a la base de datos y no a la clase de python
     cases_client_id = db.Column(db.Integer, db.ForeignKey('clients.clients_id'), nullable=False)
+
     cases_lawyer_id = db.Column(db.Integer, db.ForeignKey('lawyers.lawyers_id'), nullable=False)
     # establece relacion con tabla documents
     cases_relationship_documents = db.relationship('Documents', backref='case_document')
@@ -139,6 +140,7 @@ def user():
 @app.route('/clientes/<string:rut>', methods = ['GET','POST', 'PUT', 'DELETE'])# SE MUESTRA EN EL BUSCADOR DEL CLIENTE
 def clients(rut):
     if request.method == 'GET':
+        queryEntry= datetime.datetime.now()
         list=[]
         if rut == "17.402.744-7" or rut == "20.968.696-1":
             resp = db.session.query(Clients).all() #DEPURAR ESTO, TOMAR RESP Y QUE EL MODEL ARROJE UN OBJ DE TODOS LOS CAMPOS
@@ -153,6 +155,7 @@ def clients(rut):
             "clients_address": item.clients_address,
             "clients_contact": item.clients_contact
         })
+            print(f"{datetime.datetime.now() - queryEntry} CLIENTS TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
             return jsonify({"resp": list}),200
         else:
             resp = db.session.query(Clients).filter_by(clients_rut=rut).all()
@@ -167,6 +170,7 @@ def clients(rut):
             "clients_address": item.clients_address,
             "clients_contact": item.clients_contact
         })
+            print(f"{datetime.datetime.now() - queryEntry} CLIENTS TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
             return jsonify({"resp": list}),200
 
     if request.method == 'POST':
@@ -212,12 +216,13 @@ def clients(rut):
 @app.route('/casos/<string:rut>', methods = ['GET','POST', 'PUT', 'DELETE'])# SE MUESTRA EN EL BUSCADOR DEL CLIENTE
 def cases(rut):
     if request.method == 'GET':
+        queryEntry= datetime.datetime.now()
         list=[]
         if rut == "17.402.744-7" or rut == "20.968.696-1":
-            resp = db.session.query(Cases).filter_by(cases_activeCase=1).all() #DEPURAR ESTO, TOMAR RESP Y QUE EL MODEL ARROJE UN OBJ DE TODOS LOS CAMPOS
+            resp = db.session.query(Cases).filter_by(cases_activeCase=1).all()
 
             for item in resp:
-                getClientData = db.session.query(Clients).filter_by(clients_id=item.cases_client_id).first()
+                #getClientData = db.session.query(Clients).filter_by(clients_id=item.cases_client_id).first()
                 list.append({
             "cases_id": item.cases_id,
             "cases_description": item.cases_description,
@@ -234,15 +239,17 @@ def cases(rut):
             "cases_deadLine": item.cases_deadLine,
             "cases_client_id": item.cases_client_id,
             "cases_lawyer_id": item.cases_lawyer_id,
-            "clients_name":getClientData.clients_name,
-            "clients_rut": getClientData.clients_rut
+            "clients_name": item.case_client.clients_name,
+            "clients_rut": item.case_client.clients_rut,
+            "clients_job": item.case_client.clients_job
         })
+            print(f"{datetime.datetime.now() - queryEntry} CASES TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
             return jsonify({"resp": list}),200
+
         elif rut == "00.000.000-0":
             resp = db.session.query(Cases).filter_by(cases_activeCase=0).all() #DEPURAR ESTO, TOMAR RESP Y QUE EL MODEL ARROJE UN OBJ DE TODOS LOS CAMPOS
 
             for item in resp:
-                getClientData = db.session.query(Clients).filter_by(clients_id=item.cases_client_id).first()
                 list.append({
             "cases_id": item.cases_id,
             "cases_description": item.cases_description,
@@ -259,14 +266,17 @@ def cases(rut):
             "cases_deadLine": item.cases_deadLine,
             "cases_client_id": item.cases_client_id,
             "cases_lawyer_id": item.cases_lawyer_id,
-            "clients_name":getClientData.clients_name,
-            "clients_rut": getClientData.clients_rut
+             "clients_name": item.case_client.clients_name,
+            "clients_rut": item.case_client.clients_rut,
+            "clients_job": item.case_client.clients_job
         })
+            print(f"{datetime.datetime.now() - queryEntry} CASES TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
             return jsonify({"resp": list}),200
         else:
-            resp = db.session.query(Clients).filter_by(clients_rut=rut).first()
-            client_id= resp.clients_id
-            cases = db.session.query(Cases).filter_by(cases_client_id=client_id).all()
+            cases = Cases.query.filter(Cases.case_client.has(clients_rut=rut)).all()
+            #resp = db.session.query(Clients).filter_by(clients_rut=rut).first()
+            #client_id= resp.clients_id
+            #cases = db.session.query(Cases).filter_by(cases_client_id=client_id).all()
 
             for item in cases:
                 list.append({
@@ -284,9 +294,12 @@ def cases(rut):
             "cases_incomeDate": item.cases_incomeDate,
             "cases_deadLine": item.cases_deadLine,
             "cases_client_id": item.cases_client_id,
-            "cases_lawyer_id": item.cases_lawyer_id
+            "cases_lawyer_id": item.cases_lawyer_id,
+             "clients_name": item.case_client.clients_name,
+            "clients_rut": item.case_client.clients_rut,
+            "clients_job": item.case_client.clients_job
         })
-
+            print(f"{datetime.datetime.now() - queryEntry} CASES TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
             return jsonify({"resp": list}),200
 
     if request.method == 'POST':
@@ -393,6 +406,7 @@ def avilableCases():
 
 @app.route('/documentos/<string:cases_rol_rit_ruc>', methods = ['GET','POST', 'PUT', 'DELETE'])# SE MUESTRA EN EL BUSCADOR DEL CLIENTE
 def documents(cases_rol_rit_ruc):
+    queryEntry= datetime.datetime.now()
     if request.method == 'GET':
         list=[]
         if cases_rol_rit_ruc == "17.402.744-7" or cases_rol_rit_ruc == "20.968.696-1":
@@ -433,6 +447,7 @@ def documents(cases_rol_rit_ruc):
 
         db.session.commit()
 
+        print(f"{datetime.datetime.now() - queryEntry} CASES TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
 
         return jsonify({"resp": list[0]}),200 #DEVUELVE EL ULTIMO ID
 
@@ -466,11 +481,13 @@ def documentsDownload(id):
 
 @app.route('/documentos/upload/<int:id>', methods = ['POST'])# SE MUESTRA EN EL BUSCADOR DEL CLIENTE
 def documentsUpload(id):
-
+        queryEntry= datetime.datetime.now()
         profile = request.files['pdf']
         uploads_dir = os.path.join('./', 'pdf_store')
         print(uploads_dir)
         profile.save(os.path.join(uploads_dir, secure_filename(f"[document_id {id}].pdf")))
+
+        print(f"{datetime.datetime.now() - queryEntry} CASES TIME OF RESPONSE DELAY ---------------------------------------------------------------------------------------------->>>")
 
         return "pdf saved in folder", 200
 
